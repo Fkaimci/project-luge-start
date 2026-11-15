@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Fake-Testdaten (python fake_data.py erzeugt sie neu)
+data/fake/
