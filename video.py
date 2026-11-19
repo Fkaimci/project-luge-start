@@ -9,6 +9,8 @@ source = Dateipfad (Video) oder 0 (Live-Kamera). cv2.VideoCapture nimmt beides,
 deshalb ist Live später nur ein anderes source.
 Frames ohne Marker: x und y = nan (nicht weglassen, sonst passt das Video nicht mehr zur Zeit).
 """
+import time
+
 import cv2
 import numpy as np
 
@@ -26,13 +28,18 @@ def iter_video(source, marker_id=0, marker_size_m=0.05):
         return
 
     fps = cap.get(cv2.CAP_PROP_FPS)  # Bilder pro Sekunde
+    live = isinstance(source, int)  # 0 = Kamera, sonst Dateipfad
+    start = time.time()
     frame_idx = 0
     while True:
         ret, frame = cap.read()  # ret = gab es noch einen Frame?
         if not ret:
             break
 
-        t = frame_idx / fps  # Frame-Nummer -> Sekunden
+        if live:
+            t = time.time() - start  # echte Uhr, fps der Webcam ist oft 0
+        else:
+            t = frame_idx / fps  # Frame-Nummer -> Sekunden
         x, y = np.nan, np.nan  # Standard: kein Marker gefunden
         corners, ids, _ = detector.detectMarkers(frame)
 
