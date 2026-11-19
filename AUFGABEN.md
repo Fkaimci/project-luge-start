@@ -48,8 +48,8 @@ Vorlage: `mci-luge-start/tracking.py`.
 
 1. `iter_imu(source)`: CSV lesen, pro Sample `(t, a, w)` liefern. Zeit in s, `a` ohne Erdbeschleunigung
    in m/s², `w` in rad/s. Die Fake-CSV hat die Spalten wie ein Movella-Export (µs, m/s², deg/s).
-   Mit einer echten Aufnahme vergleichen und anpassen.
-2. `integrate_velocity(t, a_x)`: v aus a, Start bei v = 0.
+   iMit einer echten Aufnahme vergleichen und anpassen.
+2. `ntegrate_velocity(t, a_x)`: v aus a, Start bei v = 0.
 3. `find_imu_event(t, v)`: Umkehrpunkt v ≈ 0 direkt vor dem Abstoß (nicht irgendeine Nullstelle).
 4. `synchronize(video, imu)`: Versatz = Video-Event minus IMU-Event, IMU-Zeit verschieben, beide auf
    eine gemeinsame Zeitachse resamplen (`np.interp`). Rückgabe: ein dict mit allen Signalen + `offset`.
