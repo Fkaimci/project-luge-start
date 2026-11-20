@@ -1,7 +1,16 @@
-from ArUco import GetXCoordinatesAruco
-from plot import plot_aruco_coordinates
+import tkinter as tk
+from tkinter import filedialog
+
 from GUI import create_gui
 
-video_path = "C:/Users/maval/Documents/mandc/05_sem5/device development/project_dev_dev/luge_start_2.0/project-luge-start/data/VIDEO/BesterLugeStartEUWEST.mp4"  # Path to video file
-results = GetXCoordinatesAruco(video_path, marker_id=1)  # Specify the marker ID to track (optional)
-create_gui(results)  # Create the GUI and pass the results to it
+# Ein unsichtbares Hauptfenster, damit die Datei-Dialoge funktionieren
+root = tk.Tk()
+root.withdraw()
+
+video_path = filedialog.askopenfilename(title="Video wählen",
+                                        filetypes=[("Video", "*.mp4 *.mov *.avi"), ("Alle Dateien", "*.*")])
+imu_csv = filedialog.askopenfilename(title="IMU-CSV wählen",
+                                     filetypes=[("CSV", "*.csv"), ("Alle Dateien", "*.*")])
+root.destroy()
+
+create_gui(video_path, imu_csv)
