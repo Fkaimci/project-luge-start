@@ -3,3 +3,4 @@ opencv-contrib-python
 jupyterlab
 ipykernel
 matplotlib
+scipy

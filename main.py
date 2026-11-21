@@ -1,7 +1,9 @@
-from ArUco import GetXCoordinatesAruco
-from plot import plot_aruco_coordinates
-from GUI import create_gui
+import sys
 
-video_path = "C:/Users/maval/Documents/mandc/05_sem5/device development/project_dev_dev/luge_start_2.0/project-luge-start/data/VIDEO/BesterLugeStartEUWEST.mp4"  # Path to video file
-results = GetXCoordinatesAruco(video_path, marker_id=1)  # Specify the marker ID to track (optional)
-create_gui(results)  # Create the GUI and pass the results to it
+from GUI import create_gui
+from video import iter_video
+
+# Video als Argument: python main.py data/VIDEO/Marius1.mov  (ohne Argument: Simon3)
+video_path = sys.argv[1] if len(sys.argv) > 1 else "data/VIDEO/Simon3.mov"
+results = [(t, 1, x) for t, x, _y, _frame in iter_video(video_path, marker_id=1)]  # (Zeit, Marker, x) wie bisher
+create_gui(results)

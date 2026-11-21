@@ -13,6 +13,7 @@ import time
 
 import cv2
 import numpy as np
+from scipy.signal import find_peaks, medfilt
 
 arucodict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 
@@ -50,8 +51,9 @@ def iter_video(source, marker_id=0, marker_size_m=0.05):
                 pts = corner[0]  # die 4 Ecken, je (x, y) in Pixel
                 breite_px = np.linalg.norm(pts[1] - pts[0])  # Kante oben-links -> oben-rechts
                 m_pro_px = marker_size_m / breite_px  # Meter pro Pixel
-                x = float(pts[0][0]) * m_pro_px  # obere linke Ecke
-                y = float(pts[0][1]) * m_pro_px
+                mitte = pts.mean(axis=0)  # Mittelpunkt = Durchschnitt der 4 Ecken
+                x = float(mitte[0]) * m_pro_px
+                y = -float(mitte[1]) * m_pro_px  # Bild-y zeigt nach unten, wir wollen y nach oben
 
         yield t, x, y, frame  # immer liefern, auch mit nan
         frame_idx += 1
@@ -68,8 +70,8 @@ def track_video(path, marker_id=0, marker_size_m=0.05):
 
 
 def find_video_event(t, x):
-    letztes_tal = None
-    for i in range(1, len(x) - 1):  # alle Plätze außer erster und letzter (brauchen 2 Nachbarn)
-        if x[i] < x[i - 1] and x[i] < x[i + 1]:  # kleiner als beide Nachbarn = Tal
-            letztes_tal = i  # merken, wird bei jedem neuen Tal überschrieben
-    return t[letztes_tal]  # Platz -> Zeit in Sekunden
+    ok = ~np.isnan(x)  # Frames ohne Marker rauswerfen, find_peaks verträgt kein nan
+    t, x = np.asarray(t)[ok], np.asarray(x)[ok]
+    x = medfilt(x, 5)  # Median über 5 Frames: einzelne Fehl-Erkennungen (Ausreißer) fliegen raus
+    taeler, _ = find_peaks(-x, prominence=0.05)  # Tal = Berg von -x, mind. 5 cm tief (Rauschen fliegt raus)
+    return t[taeler[-1]]  # letztes Tal -> Zeit in Sekunden
