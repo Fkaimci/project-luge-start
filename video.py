@@ -28,10 +28,8 @@ def iter_video(source, marker_id=0, marker_size_m=0.05):
         print("Error: Could not open video.")
         return
 
-    fps = cap.get(cv2.CAP_PROP_FPS)  # Bilder pro Sekunde
     live = isinstance(source, int)  # 0 = Kamera, sonst Dateipfad
     start = time.time()
-    frame_idx = 0
     while True:
         ret, frame = cap.read()  # ret = gab es noch einen Frame?
         if not ret:
@@ -40,7 +38,8 @@ def iter_video(source, marker_id=0, marker_size_m=0.05):
         if live:
             t = time.time() - start  # echte Uhr, fps der Webcam ist oft 0
         else:
-            t = frame_idx / fps  # Frame-Nummer -> Sekunden
+            t = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Zeitstempel des Frames aus der Datei, ms -> s
+            # (nicht frame_nr / fps: iPhone-Videos haben Lücken, fps in der Datei ist nur ein Durchschnitt)
         x, y = np.nan, np.nan  # Standard: kein Marker gefunden
         corners, ids, _ = detector.detectMarkers(frame)
 
@@ -56,7 +55,6 @@ def iter_video(source, marker_id=0, marker_size_m=0.05):
                 y = -float(mitte[1]) * m_pro_px  # Bild-y zeigt nach unten, wir wollen y nach oben
 
         yield t, x, y, frame  # immer liefern, auch mit nan
-        frame_idx += 1
 
     cap.release()
 
