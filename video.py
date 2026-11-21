@@ -71,5 +71,7 @@ def find_video_event(t, x):
     ok = ~np.isnan(x)  # Frames ohne Marker rauswerfen, find_peaks verträgt kein nan
     t, x = np.asarray(t)[ok], np.asarray(x)[ok]
     x = medfilt(x, 5)  # Median über 5 Frames: einzelne Fehl-Erkennungen (Ausreißer) fliegen raus
+    if np.median(x[-20:]) < np.median(x[:20]):  # Ende links vom Start = Rodel fährt nach links
+        x = -x  # umdrehen, dann ist die Streckung wieder ein Tal
     taeler, _ = find_peaks(-x, prominence=0.05)  # Tal = Berg von -x, mind. 5 cm tief (Rauschen fliegt raus)
     return t[taeler[-1]]  # letztes Tal -> Zeit in Sekunden
