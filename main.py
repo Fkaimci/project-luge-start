@@ -1,9 +1,16 @@
-import sys
+import tkinter as tk
+from tkinter import filedialog
 
 from GUI import create_gui
-from video import iter_video
 
-# Video als Argument: python main.py data/VIDEO/Marius1.mov  (ohne Argument: Simon3)
-video_path = sys.argv[1] if len(sys.argv) > 1 else "data/VIDEO/Simon3.mov"
-results = [(t, 1, x) for t, x, _y, _frame in iter_video(video_path, marker_id=1)]  # (Zeit, Marker, x) wie bisher
-create_gui(results)
+# Ein unsichtbares Hauptfenster, damit die Datei-Dialoge funktionieren
+root = tk.Tk()
+root.withdraw()
+
+video_path = filedialog.askopenfilename(title="Video wählen",
+                                        filetypes=[("Video", "*.mp4 *.mov *.avi"), ("Alle Dateien", "*.*")])
+imu_csv = filedialog.askopenfilename(title="IMU-CSV wählen",
+                                     filetypes=[("CSV", "*.csv"), ("Alle Dateien", "*.*")])
+root.destroy()
+
+create_gui(video_path, imu_csv)
