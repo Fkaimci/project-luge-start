@@ -12,6 +12,11 @@ from storage import save_run, load_run
 
 from video import find_video_event
 
+from player import create_player
+
+import os
+from datetime import datetime
+
 # True: Fake-Daten benutzen, solange imu.py / sync.py noch fehlen.
 # Sobald Franka fertig ist: auf False stellen.
 USE_FAKE = True
@@ -115,11 +120,46 @@ def create_gui(video_path, imu_csv):
         if current["data"] is None:
             messagebox.showwarning("Keine Daten", "Bitte zuerst 'Analysieren' klicken.")
             return
-        folder = filedialog.askdirectory(title="Ordner zum Speichern wählen")
-        if not folder:
-            return
-        save_run(folder, current["data"], video_path, markers)
-        messagebox.showinfo("Gespeichert", f"Gespeichert in:\n{folder}")
+
+        # Toplevel = ein zweites Fenster, das über dem Hauptfenster aufgeht
+        save_window = tk.Toplevel(window)
+        save_window.title("Messung speichern")
+        save_window.geometry("450x200")
+
+        # Vorschlag für den Namen: Datum und Uhrzeit
+        name = tk.StringVar(value=datetime.now().strftime("Messung_%Y-%m-%d_%H-%M"))
+        base_folder = tk.StringVar(value=os.path.abspath("messungen"))
+
+        tk.Label(save_window, text="Name der Messung").pack(anchor="w", padx=10, pady=(10, 0))
+        tk.Entry(save_window, textvariable=name, width=40).pack(fill="x", padx=10)
+
+        tk.Label(save_window, text="Speichern in Ordner").pack(anchor="w", padx=10, pady=(10, 0))
+        folder_row = tk.Frame(save_window)
+        folder_row.pack(fill="x", padx=10)
+        tk.Label(folder_row, textvariable=base_folder, anchor="w").pack(side="left", fill="x", expand=True)
+
+        def choose_folder():
+            path = filedialog.askdirectory(title="Ordner wählen", parent=save_window)
+            if path:
+                base_folder.set(path)
+
+        def do_save():
+            run_name = name.get().strip()
+            if not run_name:
+                messagebox.showwarning("Name fehlt", "Bitte einen Namen eingeben.", parent=save_window)
+                return
+            folder = os.path.join(base_folder.get(), run_name)
+            if os.path.exists(folder):
+                messagebox.showwarning("Gibt es schon", f"'{run_name}' gibt es schon.\nBitte anderen Namen wählen.",
+                                       parent=save_window)
+                return
+            save_run(folder, current["data"], video_path, markers)
+            save_window.destroy()                       # Fenster schließen
+            status.set(f"Gespeichert in {folder}")
+            messagebox.showinfo("Gespeichert", f"Gespeichert in:\n{folder}")
+
+        tk.Button(folder_row, text="Ändern…", command=choose_folder).pack(side="right")
+        tk.Button(save_window, text="Speichern", command=do_save).pack(pady=15)
 
     tk.Button(button_row, text="Speichern", command=on_save).pack(side="left", padx=(10, 0))
     canvas.mpl_connect("button_press_event", on_plot_click)
@@ -136,8 +176,9 @@ def create_gui(video_path, imu_csv):
     # Platz für den Video-Player
     video_frame = tk.Frame(analysis_tab, width=400)
     video_frame.pack(side="right", fill="both", padx=10)
-    video_label = tk.Label(video_frame, text="Hier kommt der Video-Player hin")
-    video_label.pack(pady=20)
+    tk.Label(video_frame, text="Erst eine Messung laden").pack(pady=20)
+
+    player = {"seek": None}       # merkt sich die seek-Funktion des aktuellen Players
 
     def on_load():
         folder = filedialog.askdirectory(title="Gespeicherte Messung wählen")
@@ -145,10 +186,19 @@ def create_gui(video_path, imu_csv):
             return
         data, saved_video, saved_markers = load_run(folder)
         draw_plot(axes2, canvas2, data, saved_markers)
-        video_label.config(text=f"Video: {saved_video}\nMarker: {saved_markers}")
-        # Wenn Simons Player fertig ist, z. B.:
-        # from player import VideoPlayer
-        # VideoPlayer(video_frame, saved_video).pack()
+
+        # alten Player wegräumen, neuen bauen
+        for widget in video_frame.winfo_children():
+            widget.destroy()
+        player["seek"] = create_player(video_frame, saved_video)
+
+    def on_plot2_click(event):
+        # Klick in den Plot -> Video springt an diese Zeit
+        if player["seek"] is None or event.xdata is None:
+            return
+        player["seek"](event.xdata)
+
+    canvas2.mpl_connect("button_press_event", on_plot2_click)
 
     tk.Button(load_row, text="Messung laden", command=on_load).pack(side="left")
 
